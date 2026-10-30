@@ -65,6 +65,10 @@ html.motion-ready [data-reveal].is-visible {
 .shop-loading-line-short { width: 38%; height: 7px; margin-top: 18px; }
 @keyframes catalogue-shimmer { to { background-position-x: -220%; } }
 @media (prefers-reduced-motion: reduce) { .shop-loading-image { animation: none; } }
+@media (max-width: 700px) {
+  .shop-hero > p:last-child { max-width: 34ch; }
+  main.shop-page .category-filter { display: grid; grid-template-columns: repeat(3, max-content); column-gap: 16px; row-gap: 12px; }
+}
 .waitlist-input { transition: border-color 200ms ease, box-shadow 200ms ease; }
 .waitlist-input:focus-within { border-color: #78993a; box-shadow: 0 1px 0 #78993a; }
 .waitlist-input button { transition: color 180ms ease, transform 220ms cubic-bezier(.2,.7,.2,1), opacity 180ms ease; }

@@ -1,75 +1,98 @@
 # SneakerDrop
 
-An independently curated sneaker release showcase built around a warm editorial palette, restrained typography, considered product photography, and a real Supabase-backed catalogue and waitlist.
+SneakerDrop is a premium, editorial-style sneaker catalogue for discovering independent releases. The project demonstrates a complete database-backed product showcase with protected product management and a product-specific waitlist. It intentionally does not implement checkout or payments.
 
-> **Project status:** the local application is configured for Supabase. A public catalogue read verified three published products; `supabase/seed.sql` contains 15 products but its 12 additions have not been verified in the live database. Lint, TypeScript, tests, and the production build pass locally. No deployment is verified. This workspace has no Git metadata, and the saved Vercel CLI token is invalid.
+**Public repository:** [github.com/riyasisodiya2486/SneakerDrop](https://github.com/riyasisodiya2486/SneakerDrop)  
+**Deployment:** Not deployed yet. A public website URL will be added here after deployment is configured and verified.
 
-## Build plan and requirements checklist
+> **Current verification:** Supabase returned 12 published products in the latest catalogue read (7 available and 4 unavailable with an open waitlist). The seed defines 15 products; its remaining rows have not been verified in the live database. Lint, TypeScript, tests, and the production build pass locally. Admin CRUD with an authorized account has not been verified. The saved Vercel CLI has no credentials, so no deployment is claimed.
 
-1. [x] Audit the repository and establish a design direction. The starting directory was empty and was not a Git repository.
-2. [x] Create the responsive storefront shell, navigation, editorial homepage, product catalogue, detail view, and release waitlist entry points.
-3. [x] Define PostgreSQL schema, seed data, access policies, administrator allowlisting, and a duplicate-safe waitlist function.
-4. [x] Connect public product routes to Supabase and handle missing configuration, empty collections, and query failures.
-5. [x] Add server-validated product-specific waitlist submissions and explicit consent.
-6. [x] Add Supabase Auth login and server-side allowlist checks for admin pages and mutations.
-7. [x] Add product create/edit/delete, availability/publication/waitlist controls, stats, and paginated waitlist review.
-8. [x] Add responsive layouts, keyboard focus styles, image fallbacks, form feedback, and reduced-motion handling.
-9. [x] Run type checking, linting, validation tests, and the production build. All pass in the current local workspace.
-10. [x] Document environment setup, database provisioning, local startup, and deployment steps.
+## Features
 
-## Design direction
-
-SneakerDrop treats releases as an independent editorial selection. Bone and ink form the base, a restrained lime marker indicates a live release, and serif italics provide contrast against compact labels and direct product information. The homepage moves from a typographic campaign cover into a staggered catalogue, a dark brand note, a featured release, and a product-specific email signup. It does not implement cart or checkout.
-
-Product and campaign photography uses external image URLs. The configured Unsplash and Pinterest CDN URLs and Next.js image optimizer were verified to return images in the local environment. Follow each source's license terms and replace images with brand-owned or otherwise licensed assets before a commercial launch. The image component shows a designed fallback if a remote image fails.
-
-## Features and routes
-
-- `/` — campaign homepage, database-backed featured products, and per-product release updates.
-- `/shop` — published catalogue with availability and category URL filters.
-- `/products/[slug]` — database-backed product details and product-specific waitlist.
-- `/admin/login` — Supabase email/password login, with an allowlist check.
-- `/admin` — live product counts, product CRUD, and the newest waitlist submissions with paging.
-- `POST /api/waitlist` — validated, consented, duplicate-safe product waitlist submission.
-- `POST`, `PATCH`, `DELETE /api/admin/products` — privileged product mutations; each checks the authenticated user and allowlist, then relies on database RLS as a second authorization layer.
-- `/api/admin/login`, `/api/admin/logout` — auth session operations.
+- Editorial homepage with a featured release and live product data.
+- Supabase-backed catalogue with availability, waitlist, and category filters.
+- Product detail pages with product imagery, availability, and a product-specific waitlist form.
+- Admin sign-in protected by Supabase Auth and a database UUID allowlist.
+- Admin dashboard for product creation, editing, publication, availability, and deletion.
+- Waitlist submissions stored in Supabase with email normalization, consent validation, and duplicate prevention per product.
+- Responsive layout, reduced-motion support, loading feedback, accessible form status messages, and image fallbacks.
 
 ## Screenshots
 
-- Homepage desktop screenshot: pending capture.
-- Catalogue mobile screenshot: pending capture.
-- Admin dashboard screenshot: pending capture with an authorized account.
+### Homepage — desktop
 
-## Technology and structure
+![SneakerDrop homepage desktop screenshot](docs/screenshots/homepage-desktop.png)
 
-- Next.js App Router, React, TypeScript strict mode, Tailwind CSS 4, Supabase SSR/Auth/PostgreSQL, Zod, and Lucide icons.
-- Motion uses CSS transitions/keyframes and a small Intersection Observer client utility. No animation package is added: the effects are limited to the hero, viewport reveals, and control feedback, and all reveal content remains visible without JavaScript or under reduced-motion preferences.
-- Public product pages use server-side Supabase queries under the anonymous key and database RLS. Authenticated admin operations use the user's session; there is no service-role key in this application.
-- `src/app` contains routes, API handlers, and global styles. `src/components` contains the shared public and admin interfaces. `src/lib` contains Supabase clients, authorization, data access, types, and validation. `supabase/migrations` and `supabase/seed.sql` are the reproducible database setup.
+### Product catalogue — mobile
 
-## Database setup and security
+![SneakerDrop catalogue mobile screenshot](docs/screenshots/catalogue-mobile.png)
 
-Apply `supabase/migrations/202610290001_initial_schema.sql` in the Supabase SQL Editor or with the Supabase CLI, then run `supabase/seed.sql`. The seed contains 15 distinct products and skips existing slugs so rerunning it will not overwrite catalog edits. To apply current image changes to existing database rows, run `supabase/update_product_images.sql` in the SQL Editor.
+An admin screenshot is not included because this workspace does not have an authorized administrator session.
 
-The migration creates:
+## Technology stack
 
-- `products`: unique slug, non-negative `numeric(10,2)` price, image URL, category, availability, publication, waitlist eligibility, release code, and timestamps.
-- `waitlist_entries`: normalized email, product association, consent timestamp, creation timestamp, and a unique `(former_product_id, email)` constraint. A deleted product sets the live FK to null but leaves the former UUID and consented signup record for history. This intentionally preserves waitlist records after a product is deleted.
-- `administrator_allowlist`: Supabase user IDs. The user can read only their own allowlist membership; no client can grant itself administrator status.
+- **Application:** Next.js 15 App Router, React 19, TypeScript.
+- **Styling:** Tailwind CSS 4 is configured; the editorial visual system is implemented primarily with custom CSS, transitions, and keyframes.
+- **Database and authentication:** Supabase PostgreSQL, Supabase Auth, `@supabase/ssr`, and Supabase JavaScript client.
+- **Validation and UI:** Zod and Lucide icons.
+- **Images:** Next.js Image with approved Unsplash and Pinterest CDN hosts.
 
-RLS is enabled on all three tables. The public can select published products and cannot mutate them or read waitlist data. Authenticated administrators receive product CRUD and waitlist read access through `is_sneaker_admin()`, a security-definer helper that checks the private allowlist. Waitlist insert access is not granted to clients. The only public entry point is `join_waitlist()`, which validates consent and email shape, confirms a published and eligible product, normalizes the email, and inserts with conflict handling under the unique constraint. The application also validates inputs server-side and gives duplicate submissions a friendly response.
+## Architecture and technical decisions
 
-### Configure an administrator
+- App Router server pages fetch published products from Supabase at request time. Product data is not hardcoded or mocked.
+- Public catalogue reads use the Supabase publishable key and rely on row-level security. No service-role key is used by the application.
+- Admin API routes validate the current Supabase Auth user and confirm that their UUID is in `administrator_allowlist`. Database RLS enforces administrator permissions again.
+- The browser cannot insert waitlist rows directly. It calls the `join_waitlist()` PostgreSQL function, which validates eligibility and consent, normalizes the email, and relies on a unique constraint to reject duplicate signups for the same product.
+- `available` and `waitlist_open` are separate product fields. The first controls release availability; the second controls whether release updates can be requested.
+- Product images are hosted externally. Only HTTPS URLs from `images.unsplash.com` and `i.pinimg.com` are allowed by the app's image configuration and admin validation.
+- CSS motion is progressive enhancement: content remains visible with reduced motion or when the motion observer is unavailable.
 
-1. Create a Supabase project and apply the migration and seed.
-2. In Supabase Auth, create an administrator user with a strong password. Disable public user registration if it is not needed.
-3. Copy that user's UUID from the Auth user list.
-4. As the project owner, add the UUID through the SQL Editor: `insert into public.administrator_allowlist (user_id) values ('YOUR-AUTH-USER-UUID');`.
-5. Visit `/admin/login` and sign in. A valid Auth account not on the allowlist is rejected and signed out.
+## Database schema and setup
 
-Never expose a Supabase service-role/secret key in the browser. The app intentionally requires only the project URL and publishable/anon key.
+The SQL files are in [`supabase/`](supabase/):
 
-## Local setup
+- [`migrations/202610290001_initial_schema.sql`](supabase/migrations/202610290001_initial_schema.sql) creates `products`, `waitlist_entries`, and `administrator_allowlist`, enables RLS, and defines `join_waitlist()` and admin authorization helpers.
+- [`seed.sql`](supabase/seed.sql) inserts the 15 catalogue products. It uses `ON CONFLICT (slug) DO NOTHING` so rerunning it does not overwrite existing product edits.
+- [`update_product_images.sql`](supabase/update_product_images.sql) updates the selected image URLs for existing products without replacing other product fields.
+
+To provision a Supabase project:
+
+1. Open the Supabase SQL Editor for your project.
+2. Run the migration file, then run `supabase/seed.sql`.
+3. If you need the current image updates on existing rows, run `supabase/update_product_images.sql`.
+4. Verify the product count:
+
+```sql
+select
+  count(*) as total_products,
+  count(*) filter (where published) as published_products
+from public.products;
+```
+
+The seed contains 15 products, but the live database was last verified with 12 published products. Running the seed should insert rows whose slugs are not already present; verify the count afterward.
+
+### Administrator provisioning
+
+1. Create an administrator user in Supabase **Authentication → Users**.
+2. Copy the Auth user's UUID.
+3. As the project owner, add the UUID in the SQL Editor:
+
+```sql
+insert into public.administrator_allowlist (user_id)
+values ('YOUR-AUTH-USER-UUID')
+on conflict (user_id) do nothing;
+```
+
+4. Sign in at `/admin/login` using that Auth account. Public sign-up is not exposed, and user-editable metadata does not grant administrator access.
+
+### Row-level security
+
+- Anonymous and authenticated visitors can read published products.
+- Product mutations and waitlist review require an authenticated allowlisted administrator.
+- Waitlist rows cannot be selected or inserted directly by public clients. Public submissions go through `join_waitlist()`.
+- The allowlist policy lets a signed-in user confirm only their own membership; it does not allow users to add themselves.
+
+## Local development
 
 Requirements: Node.js 22+ and npm.
 
@@ -77,51 +100,47 @@ Requirements: Node.js 22+ and npm.
 npm install
 ```
 
-Create `.env.local` in the project root and set the real project values from Supabase Project Settings → API. `.env.example` documents the variable names; Next.js reads `.env.local` during local development and build.
+Create `.env.local` in the project root. `.env.example` is a template only; do not put secret keys in the browser or commit `.env.local`.
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
 ```
 
-After applying the migration and seed, run:
+Apply the database migration and seed, then start the app:
 
 ```powershell
 npm run dev
 ```
 
-Without a configured Supabase project, public product pages show a setup message and the waitlist reports setup unavailable. No mocked catalogue or fake submission is returned.
+The site runs at `http://localhost:3000`. The admin page is at `/admin/login`.
 
-## Waitlist behavior and limits
-
-Email is trimmed and lowercased on the server and in the database function. A signup is scoped to a product and requires explicit consent for release updates. Database uniqueness and `ON CONFLICT DO NOTHING` handle concurrent duplicates. Unavailable products can accept signups when `waitlist_open` is true; admins can close signups independently. This project stores signups but does not send email. A shared rate-limit provider is not configured; add a managed rate limiter before exposing the endpoint to high-volume public traffic.
-
-## Checks
+## Verification
 
 ```powershell
-npm run typecheck
 npm run lint
+npm run typecheck
 npm test
 npm run build
 ```
 
-Validation unit tests cover email normalization, malformed waitlist data, consent, slug shape, and non-negative prices. Public catalogue reads and waitlist submissions were verified against Supabase. Successful admin sign-in and CRUD still require an available allowlisted administrator account. No automated browser viewport audit is configured.
+Latest local checks: lint passed, TypeScript passed, all 4 tests passed, and the production build passed. Public catalogue reads, waitlist submission/duplicate handling, product image delivery, and catalogue filters have been checked against the configured Supabase project. Successful administrator CRUD still needs an authorized administrator account for an end-to-end run.
 
 ## Deployment
 
-1. Confirm the Supabase migration, desired product seed, and administrator allowlist are applied.
-2. Connect this workspace to a GitHub repository you control. The current workspace has no Git metadata or configured remote.
-3. Authenticate the Vercel CLI with `vercel login` (the saved token currently fails validation), or import the GitHub repository into Vercel.
-4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for Preview and Production. The app also accepts the older `NEXT_PUBLIC_SUPABASE_ANON_KEY` name as a fallback.
-5. Deploy, verify the public routes and authorized admin access, then add the verified URL to this document. No deployment has been performed or represented as live.
+**Deployment URL: pending.** This repository is public, but this workspace has no valid Vercel credentials yet. To deploy:
 
-There is no `vercel.json` requirement for the standard Next.js deployment. No deployment has been performed or represented as live.
+1. Sign in to Vercel or run `vercel login` in a terminal where you can complete the interactive login.
+2. Import [the GitHub repository](https://github.com/riyasisodiya2486/SneakerDrop) into Vercel, or link it with the Vercel CLI.
+3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the Vercel project environment for the deployment targets.
+4. Deploy, then verify the public catalogue, waitlist, and administrator login.
+5. Replace the pending deployment status at the top of this README with the verified website URL.
 
-## Known limitations and future improvements
+## Known limitations
 
-- No checkout, payments, cart, email delivery, image upload, or shared rate limiting.
-- Product images are externally hosted; use owned/licensed campaign photography for a real brand launch.
-- The admin editor accepts HTTPS image URLs from `images.unsplash.com` and `i.pinimg.com`; it does not upload or manage image files.
-- Waitlist data is preserved on product deletion, including email and consent timestamp. Add an appropriate retention/deletion process before collecting real customer data.
-- The admin workspace currently depends on browser confirmation for product deletion; replace with an accessible custom confirmation dialog if the admin workflow expands.
-- Screenshot placeholders are omitted because no screenshots have been captured yet.
+- No cart, checkout, payment processing, or transactional email delivery. Waitlist addresses are stored; signup success is shown in the site.
+- No shared rate-limit service is configured for public waitlist submissions.
+- Images are externally hosted; replace them with owned or properly licensed brand photography before commercial use.
+- The admin product editor accepts image URLs but does not upload or manage image files.
+- Waitlist entries are retained when a product is deleted for audit/history. Define a retention and deletion process before collecting real customer data.
+- Admin sign-in and CRUD have not been verified with an allowlisted account in this workspace.
